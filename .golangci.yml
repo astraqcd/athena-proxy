@@ -1,0 +1,41 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - misspell
+    - nilerr
+    - noctx
+    - unconvert
+    - usestdlibvars
+    - wastedassign
+  exclusions:
+    generated: lax
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - bodyclose
+          - errcheck
+          - noctx
+      - path: internal/daemon/daemon\.go
+        linters:
+          - noctx
+        text: net.Listen must not be called
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/astraqcd/athena-proxy

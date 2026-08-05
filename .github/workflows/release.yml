@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (must already exist)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+  release:
+    name: Build and publish
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Resolve version
+        id: version
+        run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build every release target
+        run: ./scripts/build-release.sh "${{ steps.version.outputs.value }}"
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-checksums: dist/SHA256SUMS
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.value }}
+          name: ${{ steps.version.outputs.value }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.value, '-') }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
