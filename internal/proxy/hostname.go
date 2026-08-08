@@ -6,16 +6,29 @@ import (
 	"strings"
 )
 
-const Domain = "challs.ctf-platform.xyz"
+const (
+	Domain    = "tcp.challs.ctf-platform.xyz"
+	webDomain = "web.challs.ctf-platform.xyz"
+)
 
-var hostnamePattern = regexp.MustCompile(`^[a-z][a-z0-9]{23}\.` + regexp.QuoteMeta(Domain) + `$`)
+const labelPattern = `[a-z][a-z0-9]{23}(-(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?`
+
+var (
+	hostnamePattern    = regexp.MustCompile(`^` + labelPattern + `\.` + regexp.QuoteMeta(Domain) + `$`)
+	webHostnamePattern = regexp.MustCompile(`^` + labelPattern + `\.` + regexp.QuoteMeta(webDomain) + `$`)
+)
 
 func NormalizeHostname(raw string) (string, error) {
 	hostname := strings.TrimSpace(raw)
-	if !hostnamePattern.MatchString(hostname) {
-		return "", fmt.Errorf("%q is not a challenge hostname, which looks like <id>.%s", hostname, Domain)
+	if hostnamePattern.MatchString(hostname) {
+		return hostname, nil
 	}
-	return hostname, nil
+	if webHostnamePattern.MatchString(hostname) {
+		return "", fmt.Errorf(
+			"%q is a web challenge. Open https://%s in a browser instead of proxying it",
+			hostname, hostname)
+	}
+	return "", fmt.Errorf("%q is not a challenge hostname, which looks like <id>.%s", hostname, Domain)
 }
 
 func ShortHostname(hostname string) string {

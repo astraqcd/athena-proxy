@@ -25,8 +25,8 @@ func TestSaveRoundTrips(t *testing.T) {
 	want := state.State{
 		ControlPort: 40000,
 		Targets: []state.Target{
-			{Hostname: "s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz", Name: "pwn", LocalPort: 13370},
-			{Hostname: "n1ubqh2xsyb1q00lwgctna75.challs.ctf-platform.xyz", LocalPort: 13371},
+			{Hostname: "s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz", Name: "pwn", LocalPort: 13370},
+			{Hostname: "n1ubqh2xsyb1q00lwgctna75.tcp.challs.ctf-platform.xyz", LocalPort: 13371},
 		},
 	}
 	if err := state.Save(want); err != nil {

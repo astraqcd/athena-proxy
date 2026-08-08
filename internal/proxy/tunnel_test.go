@@ -15,7 +15,7 @@ import (
 	"github.com/astraqcd/athena-proxy/internal/tlstest"
 )
 
-const testHostname = "s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz"
+const testHostname = "s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz"
 
 type recorder struct {
 	mu       sync.Mutex

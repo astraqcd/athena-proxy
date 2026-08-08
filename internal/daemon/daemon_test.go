@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	hostA = "s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz"
-	hostB = "n1ubqh2xsyb1q00lwgctna75.challs.ctf-platform.xyz"
-	dead  = "dhqw2q86wbz6x5av9dmj3ljw.challs.ctf-platform.xyz"
+	hostA = "s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz"
+	hostB = "n1ubqh2xsyb1q00lwgctna75.tcp.challs.ctf-platform.xyz"
+	dead  = "dhqw2q86wbz6x5av9dmj3ljw.tcp.challs.ctf-platform.xyz"
 )
 
 type syncBuffer struct {
@@ -365,7 +365,7 @@ func TestManyTargetsAcceptIndependently(t *testing.T) {
 	servers := map[string]*tlstest.Server{}
 	hostnames := make([]string, 0, 12)
 	for i := range 12 {
-		hostname := fmt.Sprintf("t%023d.challs.ctf-platform.xyz", i)
+		hostname := fmt.Sprintf("t%023d.tcp.challs.ctf-platform.xyz", i)
 		hostnames = append(hostnames, hostname)
 		servers[hostname] = echoServer(t, hostname, tlstest.Echo)
 	}
@@ -474,7 +474,7 @@ func boundAddresses(t *testing.T, f *fixture) []string {
 func TestAddRejectsAnUnusableHostname(t *testing.T) {
 	f := newFixture(t, nil)
 
-	for _, hostname := range []string{"", "localhost", "S8JS81P52QT5SIBPGDWRJHIX.challs.ctf-platform.xyz", "s8js81p52qt5sibpgdwrjhix.challs.example.com"} {
+	for _, hostname := range []string{"", "localhost", "S8JS81P52QT5SIBPGDWRJHIX.tcp.challs.ctf-platform.xyz", "s8js81p52qt5sibpgdwrjhix.challs.example.com"} {
 		if _, err := f.client.Add(control.AddRequest{Hostname: hostname}); err == nil {
 			t.Errorf("add(%q) succeeded, want a rejection", hostname)
 		}

@@ -6,7 +6,7 @@ Every challenge instance is reachable at its own hostname on port 443, and the g
 
 ```bash
 athena-proxy run &
-athena-proxy add s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz --name pwn-heap
+athena-proxy add s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz --name pwn-heap
 nc 127.0.0.1 13370
 ```
 
@@ -89,7 +89,7 @@ athena-proxy run
 Then register the hostname from the event app's connect panel:
 
 ```bash
-athena-proxy add s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz --name pwn-heap
+athena-proxy add s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz --name pwn-heap
 ```
 
 | Command                                      | What it does                                       |
@@ -121,7 +121,7 @@ Each registered hostname gets its own loopback listener. A connection to that li
 
 The hostname is the whole configuration: it resolves publicly, it is the address to dial, and it identifies the instance at the gateway.
 
-`add` takes a challenge hostname — a 24-character id under `challs.ctf-platform.xyz` — and refuses anything else before opening a listener, so a mistyped or truncated paste fails at registration.
+`add` takes a challenge hostname — a 24-character id, optionally suffixed with `-<port>`, under `tcp.challs.ctf-platform.xyz` — and refuses anything else before opening a listener, so a mistyped or truncated paste fails at registration. Web challenges live under `web.challs.ctf-platform.xyz`. Registering one is refused with the `https://` URL to open in a browser instead, since proxying it would gain you nothing.
 
 Three properties are worth knowing:
 

@@ -19,7 +19,7 @@ func newRootCmd() *cobra.Command {
 		SilenceErrors: true,
 		Example: `
   athena-proxy run &
-  athena-proxy add s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz --name pwn-heap
+  athena-proxy add s8js81p52qt5sibpgdwrjhix.tcp.challs.ctf-platform.xyz --name pwn-heap
   nc 127.0.0.1 13370
 `,
 	}
