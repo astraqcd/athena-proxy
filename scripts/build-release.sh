@@ -23,6 +23,10 @@ TARGETS=(
 rm -rf "$DIST"
 mkdir -p "$DIST"
 
+NOTICES="$(mktemp)"
+trap 'rm -f "$NOTICES"' EXIT
+"${ROOT}/scripts/third-party-notices.sh" "$NOTICES"
+
 for target in "${TARGETS[@]}"; do
 	goos="${target%%/*}"
 	goarch="${target##*/}"
@@ -30,8 +34,11 @@ for target in "${TARGETS[@]}"; do
 	ext=""
 	[ "$goos" = "windows" ] && ext=".exe"
 
+	arch="$goarch"
+	[ "$goarch" = "amd64" ] && arch="x64"
+
 	stage="$(mktemp -d)"
-	archive="${BINARY}_${VERSION}_${goos}_${goarch}"
+	archive="${BINARY}-${goos}-${arch}"
 
 	echo "building ${archive}"
 	CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build \
@@ -40,7 +47,8 @@ for target in "${TARGETS[@]}"; do
 		-o "${stage}/${BINARY}${ext}" \
 		"$ROOT"
 
-	cp "${ROOT}/LICENSE" "${ROOT}/README.md" "$stage/"
+	cp "${ROOT}/LICENSE" "$stage/"
+	cp "$NOTICES" "${stage}/THIRD-PARTY-NOTICES"
 
 	if [ "$goos" = "windows" ]; then
 		(cd "$stage" && zip -q -X -r "${DIST}/${archive}.zip" .)

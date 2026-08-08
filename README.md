@@ -28,13 +28,13 @@ io = remote("<hostname>", 443, ssl=True)
 Linux and macOS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/astraqcd/athena-proxy/main/install.sh | sh
+curl -fsSL https://downloads.athena-ctf.com/proxy/install.sh | sh
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/astraqcd/athena-proxy/main/install.ps1 | iex
+irm https://downloads.athena-ctf.com/proxy/install.ps1 | iex
 ```
 
 Re-running either script upgrades the binary in place. Defaults:
@@ -48,16 +48,28 @@ Override with `ATHENA_PROXY_VERSION` (e.g. `v1.0.0`) and `ATHENA_PROXY_INSTALL_D
 
 ### Manual
 
-Download an archive for your platform from the [latest release](https://github.com/astraqcd/athena-proxy/releases/latest) and verify it against `SHA256SUMS`:
+Download an archive for your platform and verify it against `SHA256SUMS`:
+
+| Platform              | File                                                                             |
+| --------------------- | -------------------------------------------------------------------------------- |
+| Linux (x86-64)        | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-linux-x64.tar.gz`    |
+| Linux (ARM64)         | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-linux-arm64.tar.gz`  |
+| macOS (Apple silicon) | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-darwin-arm64.tar.gz` |
+| macOS (Intel)         | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-darwin-x64.tar.gz`   |
+| Windows (x86-64)      | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-windows-x64.zip`     |
+| Windows (ARM64)       | `https://downloads.athena-ctf.com/proxy/latest/athena-proxy-windows-arm64.zip`   |
 
 ```bash
+curl -fsSLO https://downloads.athena-ctf.com/proxy/latest/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 
-Releases carry build provenance attestations, verifiable with the GitHub CLI:
+Put a version in the path in place of `latest` to pin one — `.../proxy/v1.0.0/athena-proxy-linux-x64.tar.gz`. Every published version stays at its own path, and `.../proxy/versions.json` lists them.
+
+Each archive carries a build provenance attestation, verifiable with the GitHub CLI:
 
 ```bash
-gh attestation verify athena-proxy_v1.0.0_linux_amd64.tar.gz --repo astraqcd/athena-proxy
+gh attestation verify athena-proxy-linux-x64.tar.gz --repo astraqcd/athena-proxy
 ```
 
 ### From source
@@ -80,12 +92,12 @@ Then register the hostname from the event app's connect panel:
 athena-proxy add s8js81p52qt5sibpgdwrjhix.challs.ctf-platform.xyz --name pwn-heap
 ```
 
-| Command                                        | What it does                                          |
-| ---------------------------------------------- | ----------------------------------------------------- |
-| `athena-proxy run`                             | Start the daemon and serve every registered target    |
-| `athena-proxy add <hostname>`                  | Register a hostname and print its local address       |
-| `athena-proxy list`                            | Show every target and its local address               |
-| `athena-proxy remove <name\|hostname\|port>`   | Drop a target and close its listener                  |
+| Command                                      | What it does                                       |
+| -------------------------------------------- | -------------------------------------------------- |
+| `athena-proxy run`                           | Start the daemon and serve every registered target |
+| `athena-proxy add <hostname>`                | Register a hostname and print its local address    |
+| `athena-proxy list`                          | Show every target and its local address            |
+| `athena-proxy remove <name\|hostname\|port>` | Drop a target and close its listener               |
 
 `add` takes `--name <label>` to give the target a readable name, and `--port <local>` to pin its local port.
 
@@ -123,11 +135,11 @@ Listeners and the control port bind `127.0.0.1`, so targets are reachable from y
 
 Registered hostnames, their names, their local ports and the control port live in one file:
 
-| Platform | Path                                                     |
-| -------- | -------------------------------------------------------- |
-| Linux    | `~/.config/athena-proxy/state.json`                      |
-| macOS    | `~/Library/Application Support/athena-proxy/state.json`  |
-| Windows  | `%AppData%\athena-proxy\state.json`                      |
+| Platform | Path                                                    |
+| -------- | ------------------------------------------------------- |
+| Linux    | `~/.config/athena-proxy/state.json`                     |
+| macOS    | `~/Library/Application Support/athena-proxy/state.json` |
+| Windows  | `%AppData%\athena-proxy\state.json`                     |
 
 Set `ATHENA_PROXY_HOME` to put it somewhere else. Local ports are persisted, so a target keeps its local address across a daemon restart. If a persisted port is taken when the daemon starts, it takes another and says so on stderr.
 

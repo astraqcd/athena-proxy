@@ -49,8 +49,9 @@ jobs:
     name: Build and publish
     needs: verify
     runs-on: ubuntu-latest
+    environment: release
     permissions:
-      contents: write
+      contents: read
       id-token: write
       attestations: write
       artifact-metadata: write
@@ -74,20 +75,52 @@ jobs:
         run: ./scripts/build-release.sh "${{ steps.version.outputs.value }}"
 
       - name: Attest build provenance
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: dist/SHA256SUMS
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.version.outputs.value }}
-          name: ${{ steps.version.outputs.value }}
-          draft: false
-          prerelease: ${{ contains(steps.version.outputs.value, '-') }}
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/SHA256SUMS
+      - name: Build the release manifest
+        env:
+          TAG: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          (cd dist && while read -r sum name; do
+            jq -n --arg name "$name" --arg sha256 "$sum" \
+              --argjson size "$(stat -c%s "$name")" \
+              '{name: $name, sha256: $sha256, size: $size}'
+          done < SHA256SUMS | jq -s '.') > assets.json
+
+          jq -n --arg version "$TAG" \
+            --arg published "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --slurpfile assets assets.json \
+            '{version: $version, published: $published, assets: $assets[0]}' > release.json
+          cat release.json
+
+      - name: Upload archives, checksums and the version manifests
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_DOWNLOADS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_DOWNLOADS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          TAG: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          aws s3 cp dist "s3://athena-downloads/proxy/${TAG}/" --recursive \
+            --endpoint-url "$R2_ENDPOINT" \
+            --cache-control "public, max-age=31536000, immutable"
+
+          if ! aws s3 cp "s3://athena-downloads/proxy/versions.json" existing.json \
+            --endpoint-url "$R2_ENDPOINT"; then
+            echo '{"versions":[]}' > existing.json
+          fi
+
+          jq --slurpfile release release.json \
+            '{versions: ([$release[0]] + [.versions[] | select(.version != $release[0].version)])}' \
+            existing.json > versions.json
+
+          aws s3 cp versions.json "s3://athena-downloads/proxy/versions.json" \
+            --endpoint-url "$R2_ENDPOINT" --cache-control "no-cache" --content-type application/json
+
+          jq -n --arg v "$TAG" '{version:$v}' > latest.json
+          aws s3 cp latest.json "s3://athena-downloads/proxy/latest.json" \
+            --endpoint-url "$R2_ENDPOINT" --cache-control "no-cache" --content-type application/json

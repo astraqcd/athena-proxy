@@ -39,7 +39,7 @@ Any local process can reach a loopback port, and a web page can attempt one. Two
 - `internal/control/` — the control API types and the client every non-`run` invocation uses
 - `internal/state/` — the state file: its location per platform, and its atomic write
 - `internal/tlstest/` — a TLS echo server standing in for the remote; test-only, imported by no production path
-- `scripts/build-release.sh` — the `GOOS`/`GOARCH` matrix, archives and `SHA256SUMS`
+- `scripts/build-release.sh` — the `GOOS`/`GOARCH` matrix, archives and `SHA256SUMS`; `scripts/third-party-notices.sh` — the `THIRD-PARTY-NOTICES` staged into each one
 
 ## Conventions
 
@@ -58,6 +58,14 @@ Before inventing a helper, type alias or signature shape, copy the one already i
 
 ## Releases
 
-A `v*` tag drives `.github/workflows/release.yml`: tests on all three platforms, then one Ubuntu runner cross-compiles every target, attests build provenance against `SHA256SUMS`, and publishes the archives. `scripts/build-release.sh` is the same script CI and a developer run, so a local build reproduces the release layout exactly.
+**A tag is the whole release.** A `v*` tag drives `.github/workflows/release.yml`: tests on all three platforms, then one Ubuntu runner cross-compiles every target, attests build provenance against `SHA256SUMS`, and uploads `dist/` to `athena-downloads` under `proxy/<tag>/` before rewriting `proxy/latest.json` and prepending the release to `proxy/versions.json`. The tag and that upload are the entire release: `downloads.athena-ctf.com/proxy/…` is the only place a user gets a binary. `scripts/build-release.sh` is the same script CI and a developer run, so a local build reproduces the release layout exactly.
 
-The version is injected with `-X main.version=<tag>`; a build without it reports `dev`.
+The version is injected with `-X main.version=<tag>`; a build without it reports `dev`. It reaches no filename: an archive is `athena-proxy-<os>-<arch>.<ext>`, and the version lives in the key path alone.
+
+⚠ **That grammar is fixed, and this repository cannot see what depends on it.** An archive named anything else, or a new `GOOS`/`GOARCH` target added here alone, uploads cleanly and then 404s for every user — the download surface serves an allowlist it maintains separately. Changing a name or adding a target is a coordinated change; raise it before cutting the tag.
+
+Each archive carries `LICENSE` and a `THIRD-PARTY-NOTICES` written by `scripts/third-party-notices.sh`, which pins its own `go-licenses` version and installs it to a temp `GOBIN`, so `go.mod` stays at the three modules the binary actually links. It reports under `GOOS=windows`, the superset of the three build graphs — `mousetrap` reaches the binary on Windows alone and would otherwise be missing from the notice shipped inside the Windows archive.
+
+`versions.json` is the only record of release history, because nothing can list the bucket. The upload step reads it, prepends this release and writes it back; that read-modify-write is safe because this job is the only writer.
+
+The upload reads `R2_DOWNLOADS_ACCESS_KEY_ID`, `R2_DOWNLOADS_SECRET_ACCESS_KEY` and `R2_ENDPOINT` from the `release` environment, which admits `v*` tags alone. This repository is public, so those credentials stay out of reach of anything a fork can trigger: no `pull_request_target`, `workflow_run` or `issue_comment` trigger, ever. Every action in that job is first-party; adding a third-party one means pinning it to a commit SHA.
